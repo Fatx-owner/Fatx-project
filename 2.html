@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FATX - Downloader & Booster</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,'Segoe UI',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+  body{
+    background:#ffd93d;
+    background-image:radial-gradient(circle,#00000010 1px,transparent 1px);
+    background-size:12px 12px;
+    color:#1a1a1a;
+    min-height:100vh;
+    padding:16px 14px 88px;
+    line-height:1.4;
+  }
+  .wrap{max-width:480px;margin:0 auto}
+
+  /* HEADER */
+  .head{padding:6px 0 20px;margin-bottom:16px;position:relative}
+  .head::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:#1a1a1a;border-radius:3px}
+  .head h1{font-size:34px;font-weight:900;letter-spacing:-1.5px;line-height:1;text-transform:uppercase;color:#1a1a1a}
+  .head h1 span{color:#e63946;font-style:italic}
+  .head p{color:#1a1a1a;opacity:.65;font-size:11.5px;margin-top:6px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
+
+  /* NAV */
+  .nav{position:fixed;bottom:0;left:0;right:0;background:#1a1a1a;display:flex;z-index:50;border-top:3px solid #1a1a1a}
+  .nav button{flex:1;background:none;border:0;color:#6b6b6b;padding:10px 0 12px;font-size:10.5px;font-weight:800;cursor:pointer;transition:color .15s;display:flex;flex-direction:column;align-items:center;gap:3px;text-transform:uppercase;letter-spacing:.5px}
+  .nav button svg{width:20px;height:20px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .nav button.active{color:#ffd93d}
+
+  /* PAGE */
+  .page{display:none}
+  .page.active{display:block;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+
+  /* CARD */
+  .card{background:#fffbf0;border:2.5px solid #1a1a1a;border-radius:14px;padding:15px;margin-bottom:14px;box-shadow:4px 4px 0 #1a1a1a}
+  .label{font-size:10.5px;font-weight:800;color:#1a1a1a;margin-bottom:10px;letter-spacing:1.2px;text-transform:uppercase}
+
+  /* INPUT */
+  .input-box{display:flex;gap:6px;background:#fff;border:2px solid #1a1a1a;border-radius:10px;padding:4px 4px 4px 12px;align-items:center}
+  .input-box:focus-within{box-shadow:0 0 0 3px #ffd93d80}
+  .input-box input{flex:1;background:transparent;border:0;outline:0;color:#1a1a1a;font-size:14px;min-width:0;padding:8px 0;font-weight:500}
+  .input-box input::placeholder{color:#999;font-weight:500}
+  .btn-paste{background:#1a1a1a;color:#ffd93d;border:0;padding:8px 11px;border-radius:6px;font-weight:800;font-size:11px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px}
+
+  .btn{
+    width:100%;border:2.5px solid #1a1a1a;padding:12px;border-radius:10px;
+    font-size:13px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:.8px;
+    box-shadow:3px 3px 0 #1a1a1a;transition:transform .08s,box-shadow .08s,opacity .15s;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 #1a1a1a}
+  .btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:1px 1px 0 #1a1a1a;transform:translate(1px,1px)}
+  .btn-primary{background:#e63946;color:#fff;margin-top:10px}
+  .btn-green{background:#2a9d8f;color:#fff}
+  .btn-cyan{background:#3a86ff;color:#fff}
+  .btn-ghost{background:#fff;color:#1a1a1a}
+
+  .loading{display:none;text-align:center;padding:14px;color:#1a1a1a;font-size:12.5px;font-weight:700}
+  .spin{width:26px;height:26px;border:3px solid #1a1a1a20;border-top-color:#1a1a1a;border-radius:50%;margin:0 auto 8px;animation:spin .65s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .error{display:none;background:#ffe0e2;border:2px solid #e63946;color:#8b1a2a;padding:10px;border-radius:9px;font-size:12px;text-align:center;margin-top:10px;font-weight:700}
+    /* RESULT */
+  .result{display:none;margin-top:12px;background:#fffbf0;border:2.5px solid #1a1a1a;border-radius:14px;overflow:hidden;box-shadow:4px 4px 0 #1a1a1a}
+  .result .top{display:flex;gap:10px;padding:12px 14px;align-items:center}
+  .result .avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#eee;border:2px solid #1a1a1a}
+  .result video{width:100%;background:#000;display:block;max-height:460px;border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a}
+  .stats{display:flex;gap:14px;padding:10px 14px;color:#666;font-size:12px;border-bottom:2px solid #1a1a1a;font-weight:600}
+  .stats b{color:#1a1a1a;font-weight:800}
+  .downloads{padding:12px 14px;display:grid;gap:8px}
+
+  /* BOOST STATS */
+  .stat-big{text-align:center;padding:6px 0}
+  .stat-big .num{font-size:46px;font-weight:900;color:#e63946;line-height:1;text-shadow:3px 3px 0 #1a1a1a;letter-spacing:-2px}
+  .stat-big .num small{font-size:16px;color:#1a1a1a;font-weight:800;text-shadow:none;letter-spacing:0}
+  .stat-big .txt{font-size:12px;color:#1a1a1a;margin-top:8px;font-weight:800;text-transform:uppercase;letter-spacing:.8px}
+  .stat-big .txt.warn{color:#c17c1a}
+  .stat-big .txt.ok{color:#2a9d8f}
+  .bar{height:12px;background:#fff;border:2.5px solid #1a1a1a;border-radius:99px;overflow:hidden;margin:12px 0 8px}
+  .bar i{display:block;height:100%;background:#e63946;border-radius:99px;transition:width .5s}
+  .bar.green i{background:#2a9d8f}
+  .row{display:flex;justify-content:space-between;font-size:11.5px;color:#666;font-weight:700}
+  .row b{color:#1a1a1a;font-weight:800}
+
+  /* GAME LIST */
+  .game-item{background:#fff;border:2.5px solid #1a1a1a;border-radius:11px;padding:10px;display:flex;align-items:center;gap:10px;margin-bottom:9px;cursor:pointer;transition:transform .1s;box-shadow:3px 3px 0 #1a1a1a}
+  .game-item:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #1a1a1a}
+  .game-item.pilih{background:#ffd93d;box-shadow:3px 3px 0 #e63946}
+  .game-item .icon{width:40px;height:40px;border-radius:8px;background:#fffbf0;border:2px solid #1a1a1a;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+  .game-item.pilih .icon{background:#fff}
+  .game-item .info{flex:1;min-width:0}
+  .game-item .info b{font-size:13px;display:block;font-weight:800;color:#1a1a1a}
+  .game-item .info span{font-size:10.5px;color:#666;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+  .game-item .btns{display:flex;flex-direction:column;gap:5px}
+  .game-item button{background:#fff;color:#1a1a1a;border:2px solid #1a1a1a;padding:5px 10px;border-radius:6px;font-weight:800;font-size:10px;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:.3px}
+  .game-item button.play{background:#e63946;color:#fff}
+
+  .pilih-info{background:#fff;border:2.5px solid #1a1a1a;border-radius:10px;padding:11px;margin-top:10px;text-align:center}
+  .pilih-info .cap{font-size:10.5px;color:#666;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+  .pilih-info .name{font-size:16px;font-weight:900;color:#e63946;margin-top:3px;letter-spacing:-.3px}
+
+  /* CACHE */
+  .cache-total{text-align:center;padding:8px 0 4px}
+  .cache-total h2{font-size:36px;font-weight:900;color:#e63946;letter-spacing:-1.5px;text-shadow:3px 3px 0 #1a1a1a}
+  .cache-total p{color:#666;font-size:11px;margin-top:2px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  .cache-status{text-align:center;font-size:12px;font-weight:800;margin-top:10px;color:#c17c1a;text-transform:uppercase;letter-spacing:.5px}
+  .cache-status.ok{color:#2a9d8f}
+  .cache-item{background:#fff;border:2px solid #1a1a1a;border-radius:9px;padding:9px;display:flex;align-items:center;gap:9px;margin-bottom:7px}
+  .cache-item .ic{width:34px;height:34px;border-radius:7px;background:#fffbf0;border:1.5px solid #1a1a1a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .cache-item .inf{flex:1;min-width:0}
+  .cache-item .inf b{font-size:12.5px;font-weight:800;display:block;color:#1a1a1a}
+  .cache-item .inf span{font-size:10.5px;color:#666;font-weight:600}
+  .cache-item .sz{font-weight:900;font-size:12px;color:#e63946}
+  .cache-item.done{opacity:.55}
+  .cache-item.done .sz{color:#2a9d8f}
+  .cache-item button{background:#e63946;color:#fff;border:2px solid #1a1a1a;padding:5px 9px;border-radius:6px;font-weight:800;font-size:10px;cursor:pointer;text-transform:uppercase}
+  .cache-item.done button{background:#2a9d8f}
+
+  .cooldown{display:none;background:#fff3c4;border:2px solid #1a1a1a;border-radius:9px;padding:10px;text-align:center;margin-top:10px;font-size:11.5px;color:#1a1a1a;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+  .cooldown b{color:#e63946;font-size:18px;display:block;margin-top:2px;letter-spacing:1px}
+
+  .divider{height:3px;background:#1a1a1a;border-radius:3px;margin:16px 0}
+
+  /* OVERLAY BOOST */
+  .overlay{display:none;position:fixed;inset:0;background:rgba(26,26,26,.96);z-index:200;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px}
+  .overlay .circle{width:130px;height:130px;border-radius:50%;background:#ffd93d;border:3px solid #1a1a1a;box-shadow:6px 6px 0 #e63946;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;color:#1a1a1a;margin-bottom:22px;letter-spacing:-1px}
+  .overlay h3{font-size:16px;font-weight:900;color:#ffd93d;text-transform:uppercase;letter-spacing:1px}
+  .overlay p{color:#aaa;font-size:12px;margin-top:6px;font-weight:700}
+
+  /* ANIME OVERLAY */
+  .anime{display:none;position:fixed;inset:0;background:#ffd93d;background-image:radial-gradient(circle,#00000012 1px,transparent 1px);background-size:14px 14px;z-index:300;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px}
+  .anime .char-wrap{position:relative;display:inline-block}
+  .anime .char-wrap::before{content:'';position:absolute;inset:-40px;background:#e63946;border-radius:50%;opacity:.18;z-index:-1}
+  .anime .char{font-size:86px;display:block;animation:pop .4s ease}
+  @keyframes pop{from{transform:scale(.4) rotate(-10deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+  .anime .name{font-size:30px;font-weight:900;margin-top:22px;color:#1a1a1a;letter-spacing:-1px;text-transform:uppercase;text-shadow:3px 3px 0 #e63946;line-height:1}
+  .anime .jp{font-size:11px;color:#1a1a1a;opacity:.7;margin-top:8px;letter-spacing:3px;font-weight:800}
+  .anime .pbar{width:75%;max-width:280px;height:14px;background:#fff;border:2.5px solid #1a1a1a;border-radius:99px;overflow:hidden;margin:24px 0 10px;box-shadow:3px 3px 0 #1a1a1a}
+  .anime .pbar i{display:block;height:100%;background:#e63946;width:0%;transition:width .25s;border-radius:99px}
+  .anime .pct{font-size:15px;font-weight:900;color:#1a1a1a;letter-spacing:.5px}
+  .anime .status{font-size:11px;color:#1a1a1a;opacity:.7;margin-top:6px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+
+  /* TRANSISI */
+  #transisi{position:fixed;inset:0;background:#1a1a1a;z-index:250;display:none;align-items:center;justify-content:center;flex-direction:column}
+  #transisi div{width:30px;height:30px;border:3px solid #333;border-top-color:#ffd93d;border-radius:50%;animation:spin .6s linear infinite}
+  #transisi span{margin-top:12px;color:#ffd93d;font-weight:900;letter-spacing:5px;font-size:12px;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>FATX<span>.</span></h1>
+    <p>Downloader ・ ダウンローダー</p>
+  </div>
+
+  <!-- ================= DOWNLOADER ================= -->
+  <div id="page-downloader" class="page active">
+    <div class="card">
+      <div class="label">Link TikTok</div>
+      <div class="input-box">
+        <input id="urlInput" placeholder="https://www.tiktok.com/@.../video/..." inputmode="url">
+        <button class="btn-paste" onclick="pasteLink()">Tempel</button>
+      </div>
+      <button class="btn btn-primary" id="btnDownload" onclick="downloadNow()">Download Video</button>
+      <div class="loading" id="loading"><div class="spin"></div>Mengambil data video…</div>
+      <div class="error" id="errorBox"></div>
+    </div>
+
+    <div class="result" id="result">
+      <div class="top">
+        <img class="avatar" id="avatar" alt="">
+        <div>
+          <div id="nickname" style="font-weight:800;font-size:13px"></div>
+          <div id="username" style="color:#666;font-size:11.5px;font-weight:700"></div>
+        </div>
+      </div>
+      <div id="caption" style="padding:0 14px 12px;font-size:12.5px;color:#444;line-height:1.4;font-weight:500"></div>
+      <video id="videoPlayer" controls playsinline loop></video>
+      <div class="stats" id="stats"></div>
+      <div class="downloads">
+        <button class="btn btn-primary" style="margin:0" onclick="downloadFile(currentData.play,'fatx-video.mp4')">Download Video</button>
+        <button class="btn btn-ghost" onclick="downloadFile(currentData.wmplay||currentData.play,'fatx-video-hd.mp4')">Download HD</button>
+        <button class="btn btn-cyan" onclick="downloadFile(currentData.music,'fatx-musik.mp3')">Download Musik</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= BOOSTER ================= -->
+  <div id="page-booster" class="page">
+    <div class="card">
+      <div class="label">Performa HP</div>
+      <div class="stat-big">
+        <div class="num"><span id="perfNum">62</span><small>%</small></div>
+        <div class="txt warn" id="perfText">Perlu di-boost</div>
+        <div class="bar"><i id="perfBar" style="width:62%"></i></div>
+        <div class="row">
+          <span>RAM <b id="ramText">2.1 / 4 GB</b></span>
+          <span>Suhu <b id="suhuText">41°C</b></span>
+        </div>
+      </div>
+      <button class="btn btn-green" id="btnBoostSemua" onclick="boostSemua()" style="margin-top:14px">Boost & Bersihkan</button>
+    </div>
+
+    <div class="card">
+      <div class="label">Pilih Game</div>
+      <div id="gameList"></div>
+      <div class="pilih-info">
+        <div class="cap">Game dipilih</div>
+        <div class="name" id="gameTerpilih">Belum ada</div>
+      </div>
+      <button class="btn btn-primary" onclick="autoPlay()">Buka Game</button>
+      <p style="text-align:center;font-size:10.5px;color:#666;margin-top:8px;font-weight:700">Masuk langsung ke aplikasi</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="card">
+      <div class="label">Bersihkan Cache</div>
+      <div class="cache-total">
+        <h2 id="totalCache">0 MB</h2>
+        <p>Total cache aplikasi</p>
+        <div class="bar"><i id="cacheBar" style="width:0%"></i></div>
+        <div class="cache-status" id="cacheStatus">Tekan scan untuk memindai</div>
+      </div>
+      <div class="cooldown" id="cooldownBox">
+        Bisa scan lagi dalam
+        <b id="cooldownTimer">05:00</b>
+      </div>
+      <button class="btn btn-cyan" id="btnScan" onclick="scanCache()" style="margin-top:10px">Scan Cache</button>
+      <button class="btn btn-green" id="btnBersih" onclick="bersihinSemua()" style="margin-top:8px;display:none">Bersihkan Semua</button>
+      <div id="cacheListCard" style="display:none;margin-top:14px">
+        <div class="label">Cache Besar</div>
+        <div id="cacheList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button id="nav-downloader" class="active" onclick="pindah('downloader')">
+    <svg viewBox="0 0 24 24"><path d="M12 3v14m0 0l-5-5m5 5l5-5M5 21h14"/></svg>
+    Downloader
+  </button>
+  <button id="nav-booster" onclick="pindah('booster')">
+    <svg viewBox="0 0 24 24"><path d="M13 3L4 14h7l-1 7 9-11h-7l1-7z"/></svg>
+    Booster
+  </button>
+</nav>
+
+<!-- BOOST OVERLAY -->
+<div class="overlay" id="boostOverlay">
+  <div class="circle" id="boostCircle">0%</div>
+  <h3>Sedang boost…</h3>
+  <p id="boostDesc">Membersihkan RAM</p>
+</div>
+
+<!-- TRANSISI -->
+<div id="transisi"><div></div><span>FATX</span></div>
+
+<!-- ANIME OVERLAY -->
+<div class="anime" id="animeOverlay">
+  <div class="char-wrap">
+    <div class="char" id="animeChar">🔥</div>
+  </div>
+  <div class="name" id="animeJudul">Free Fire</div>
+  <div class="jp" id="animeJp">フリーファイア</div>
+  <div class="pbar"><i id="animeBar"></i></div>
+  <div class="pct" id="animePersen">0%</div>
+  <div class="status" id="animeTeks">Menyiapkan…</div>
+</div>
+<script>
+let currentData = null;
+let gameDipilih = null;
+let cacheData = [];
+const COOLDOWN_MS = 5 * 60 * 1000;
+let cooldownInterval = null;
+
+/* ============ NAV ============ */
+function pindah(page){
+  const aktif = document.querySelector('.page.active');
+  const t = document.getElementById('transisi');
+  if(aktif) aktif.style.opacity = '0';
+  t.style.display = 'flex';
+  setTimeout(() => {
+    t.style.display = 'none';
+    document.querySelectorAll('.page').forEach(p => {p.classList.remove('active'); p.style.opacity = '';});
+    document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-'+page).classList.add('active');
+    document.getElementById('nav-'+page).classList.add('active');
+    window.scrollTo({top:0, behavior:'smooth'});
+  }, 250);
+}
+
+/* ============ DOWNLOADER ============ */
+async function pasteLink(){
+  try{
+    const t = await navigator.clipboard.readText();
+    if(t) document.getElementById('urlInput').value = t;
+  }catch(e){ alert('Tempel link secara manual'); }
+}
+function fmt(n){
+  if(!n) return '0';
+  if(n >= 1e6) return (n/1e6).toFixed(1)+'jt';
+  if(n >= 1e3) return (n/1e3).toFixed(1)+'rb';
+  return n;
+}
+async function downloadNow(){
+  const url = document.getElementById('urlInput').value.trim();
+  const err = document.getElementById('errorBox');
+  const loading = document.getElementById('loading');
+  const btn = document.getElementById('btnDownload');
+  const result = document.getElementById('result');
+  err.style.display = 'none'; result.style.display = 'none';
+  if(!url || !url.includes('tiktok.com')){
+    err.style.display = 'block'; err.textContent = 'Link tidak valid. Harus link TikTok.';
+    return;
+  }
+  loading.style.display = 'block'; btn.disabled = true; btn.textContent = 'Memproses…';
+  try{
+    const res = await fetch('https://www.tikwm.com/api/?url='+encodeURIComponent(url));
+    const json = await res.json();
+    if(json.code !== 0 || !json.data) throw new Error();
+    const d = json.data; currentData = d;
+    document.getElementById('avatar').src = d.author?.avatar || '';
+    document.getElementById('nickname').textContent = d.author?.nickname || 'TikTok User';
+    document.getElementById('username').textContent = '@'+(d.author?.unique_id || 'tiktok');
+    document.getElementById('caption').textContent = d.title || '';
+    const v = document.getElementById('videoPlayer');
+    v.src = d.play; v.play().catch(()=>{});
+    document.getElementById('stats').innerHTML = '❤️ <b>'+fmt(d.digg_count)+'</b> · 💬 <b>'+fmt(d.comment_count)+'</b> · 👁 <b>'+fmt(d.play_count)+'</b>';
+    result.style.display = 'block';
+  }catch(e){
+    err.style.display = 'block'; err.textContent = 'Gagal mengambil video. Coba link lain atau cek privasi video.';
+  }finally{
+    loading.style.display = 'none'; btn.disabled = false; btn.textContent = 'Download Video';
+  }
+}
+async function downloadFile(url, nama){
+  try{
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nama;
+    document.body.appendChild(a); a.click(); a.remove();
+  }catch(e){ window.open(url, '_blank'); }
+}
+
+/* ============ GAME DATA ============ */
+const games = [
+  {nama:'Free Fire',      tipe:'Battle Royale',    icon:'🔥', fps:'90 FPS',  char:'🔥', jp:'フリーファイア',       pkg:'com.dts.freefireth'},
+  {nama:'Free Fire MAX',  tipe:'Battle Royale HD', icon:'💥', fps:'90 FPS',  char:'💥', jp:'フリーファイア MAX', pkg:'com.dts.freefiremax'},
+  {nama:'Mobile Legends', tipe:'MOBA 5v5',         icon:'⚔️', fps:'120 FPS', char:'⚔️', jp:'モバイルレジェンド',   pkg:'com.mobile.legends'},
+  {nama:'PUBG Mobile',    tipe:'Battle Royale',    icon:'🎯', fps:'90 FPS',  char:'🎯', jp:'パブジー モバイル',   pkg:'com.tencent.ig'}
+];
+
+function renderGames(){
+  const list = document.getElementById('gameList');
+  list.innerHTML = '';
+  games.forEach(g => {
+    const div = document.createElement('div');
+    div.className = 'game-item' + (gameDipilih === g.nama ? ' pilih' : '');
+    div.onclick = () => pilihGame(g.nama);
+    div.innerHTML = `
+      <div class="icon">${g.icon}</div>
+      <div class="info">
+        <b>${g.nama}</b>
+        <span>${g.tipe} · ${g.fps}</span>
+      </div>
+      <div class="btns">
+        <button class="play" onclick="event.stopPropagation();pilihGame('${g.nama}');autoPlay()">Buka</button>
+        <button onclick="event.stopPropagation();boostSatu(this)">Boost</button>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+function pilihGame(nama){
+  gameDipilih = nama;
+  document.getElementById('gameTerpilih').textContent = nama;
+  renderGames();
+}
+function boostSatu(btn){
+  btn.textContent = 'Boost…'; btn.disabled = true;
+  setTimeout(()=>{ btn.textContent = '✓'; btn.style.background = '#2a9d8f'; btn.style.color = '#fff'; }, 900);
+}
+
+/* ============ LAUNCH GAME — NO PLAY STORE ============ */
+function bukaGame(pkg){
+  try { window.location.href = 'android-app://' + pkg; } catch(e) {}
+  setTimeout(() => {
+    const intent = 'intent://#Intent;package=' + pkg +
+      ';action=android.intent.action.MAIN' +
+      ';category=android.intent.category.LAUNCHER' +
+      ';launchFlags=0x10000000;end';
+    try { window.location.href = intent; } catch(e) {}
+  }, 120);
+  setTimeout(() => {
+    try {
+      const intent = 'intent://#Intent;package=' + pkg +
+        ';action=android.intent.action.MAIN' +
+        ';category=android.intent.category.LAUNCHER' +
+        ';launchFlags=0x10000000;end';
+      const f = document.createElement('iframe');
+      f.style.display = 'none';
+      f.src = intent;
+      document.body.appendChild(f);
+      setTimeout(() => f.remove(), 1200);
+    } catch(e){}
+  }, 350);
+}
+
+/* ============ AUTO PLAY ============ */
+function autoPlay(){
+  if(!gameDipilih){ alert('Pilih game dulu'); return; }
+  const g = games.find(x => x.nama === gameDipilih);
+  const ov = document.getElementById('animeOverlay');
+  document.getElementById('animeChar').textContent = g.char;
+  document.getElementById('animeJudul').textContent = g.nama;
+  document.getElementById('animeJp').textContent = g.jp;
+  ov.style.display = 'flex';
+
+  const steps = ['Menyiapkan…','Membuka game…','Hampir siap…','Masuk ke game'];
+  let p = 0;
+  const bar = document.getElementById('animeBar');
+  const pctEl = document.getElementById('animePersen');
+  const txtEl = document.getElementById('animeTeks');
+  bar.style.width = '0%'; pctEl.textContent = '0%';
+
+  const iv = setInterval(() => {
+    p += Math.floor(Math.random()*14) + 10;
+    if(p > 100) p = 100;
+    bar.style.width = p + '%';
+    pctEl.textContent = p + '%';
+    txtEl.textContent = steps[Math.min(Math.floor(p/28), 3)];
+    if(p >= 100){
+      clearInterval(iv);
+      setTimeout(() => {
+        ov.style.display = 'none';
+        bukaGame(g.pkg);
+        setTimeout(() => {
+          alert('Membuka ' + g.nama + '.\n\nJika tidak terbuka, berarti game belum terpasang di perangkat ini.');
+        }, 1500);
+      }, 400);
+    }
+  }, 220);
+}
+
+/* ============ COOLDOWN ============ */
+function getSisa(){
+  const last = localStorage.getItem('fatx_last');
+  if(!last) return 0;
+  const s = COOLDOWN_MS - (Date.now() - parseInt(last));
+  return s > 0 ? s : 0;
+}
+function fmtTimer(ms){
+  const t = Math.ceil(ms/1000);
+  return String(Math.floor(t/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0');
+}
+function mulaiCooldown(){
+  localStorage.setItem('fatx_last', Date.now().toString());
+  cekCooldown();
+}
+function cekCooldown(){
+  const s = getSisa();
+  const bs = document.getElementById('btnScan');
+  const bb = document.getElementById('btnBersih');
+  const bB = document.getElementById('btnBoostSemua');
+  const box = document.getElementById('cooldownBox');
+  const timer = document.getElementById('cooldownTimer');
+  if(s > 0){
+    box.style.display = 'block';
+    timer.textContent = fmtTimer(s);
+    bs.disabled = true; bs.textContent = 'Tunggu…';
+    bb.disabled = true; bb.textContent = 'Terkunci';
+    bB.disabled = true; bB.textContent = 'Tunggu cooldown';
+    if(cooldownInterval) clearInterval(cooldownInterval);
+    cooldownInterval = setInterval(() => {
+      const r = getSisa();
+      if(r <= 0){
+        clearInterval(cooldownInterval);
+        box.style.display = 'none';
+        bs.disabled = false; bs.textContent = 'Scan Cache';
+        bB.disabled = false; bB.textContent = 'Boost & Bersihkan';
+        bb.style.display = 'none';
+        const st = document.getElementById('cacheStatus');
+        st.textContent = 'Siap scan lagi';
+        st.classList.add('ok');
+      } else { timer.textContent = fmtTimer(r); }
+    }, 1000);
+    return true;
+  } else {
+    box.style.display = 'none';
+    bs.disabled = false; bs.textContent = 'Scan Cache';
+    bB.disabled = false; bB.textContent = 'Boost & Bersihkan';
+    return false;
+  }
+}
+
+/* ============ BOOST SEMUA ============ */
+function boostSemua(){
+  if(cekCooldown()){ alert('Tunggu cooldown selesai'); return; }
+  const ov = document.getElementById('boostOverlay');
+  ov.style.display = 'flex';
+  const steps = ['Membersihkan RAM','Menutup aplikasi latar','Menstabilkan suhu','Selesai'];
+  let p = 0;
+  const c = document.getElementById('boostCircle');
+  const iv = setInterval(() => {
+    p += 25;
+    c.textContent = p + '%';
+    document.getElementById('boostDesc').textContent = steps[Math.min(Math.floor(p/25), 3)];
+    if(p >= 100){
+      clearInterval(iv);
+      setTimeout(() => {
+        ov.style.display = 'none';
+        document.getElementById('perfNum').textContent = '96';
+        document.getElementById('perfBar').style.width = '96%';
+        const pt = document.getElementById('perfText');
+        pt.textContent = 'Sudah optimal';
+        pt.classList.remove('warn'); pt.classList.add('ok');
+        document.getElementById('ramText').textContent = '0.8 / 4 GB';
+        document.getElementById('suhuText').textContent = '34°C';
+        cacheData.forEach(x => { x.bersih = true; x.size = 0; });
+        if(cacheData.length) { renderCache(); updateTotal(); }
+        mulaiCooldown();
+      }, 400);
+    }
+  }, 500);
+}
+
+/* ============ CACHE ============ */
+function rnd(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+
+function scanCache(){
+  if(cekCooldown()){ alert('Tunggu cooldown selesai'); return; }
+  const btn = document.getElementById('btnScan');
+  btn.textContent = 'Scanning…'; btn.disabled = true;
+  setTimeout(() => {
+    cacheData = [
+      {nama:'TikTok',         icon:'🎵', size:rnd(850,1450), bersih:false},
+      {nama:'WhatsApp',       icon:'💬', size:rnd(400,980),  bersih:false},
+      {nama:'Instagram',      icon:'📸', size:rnd(600,1250), bersih:false},
+      {nama:'Free Fire',      icon:'🔥', size:rnd(300,750),  bersih:false},
+      {nama:'Chrome',         icon:'🌐', size:rnd(250,680),  bersih:false},
+      {nama:'Mobile Legends', icon:'⚔️', size:rnd(350,900),  bersih:false},
+      {nama:'YouTube',        icon:'▶️', size:rnd(500,1100), bersih:false},
+      {nama:'PUBG Mobile',    icon:'🎯', size:rnd(450,1050), bersih:false}
+    ];
+    const total = cacheData.reduce((a,b) => a+b.size, 0);
+    document.getElementById('totalCache').textContent = total.toLocaleString() + ' MB';
+    document.getElementById('cacheBar').style.width = '85%';
+    const st = document.getElementById('cacheStatus');
+    st.textContent = total.toLocaleString() + ' MB cache ditemukan';
+    st.classList.remove('ok');
+    renderCache();
+    document.getElementById('cacheListCard').style.display = 'block';
+    const bb = document.getElementById('btnBersih');
+    bb.style.display = 'block'; bb.disabled = false; bb.textContent = 'Bersihkan Semua';
+    btn.textContent = 'Scan Lagi'; btn.disabled = false;
+  }, 1400);
+}
+
+function renderCache(){
+  const list = document.getElementById('cacheList');
+  list.innerHTML = '';
+  cacheData.forEach((c,i) => {
+    const div = document.createElement('div');
+    div.className = 'cache-item' + (c.bersih ? ' done' : '');
+    div.innerHTML = `
+      <div class="ic">${c.icon}</div>
+      <div class="inf">
+        <b>${c.nama}</b>
+        <span>${c.bersih ? 'Bersih' : 'Cache menumpuk'}</span>
+      </div>
+      <div class="sz">${c.bersih ? '0 MB' : c.size + ' MB'}</div>
+      <button onclick="bersihinSatu(${i})" ${c.bersih || getSisa() > 0 ? 'disabled' : ''}>
+        ${c.bersih ? '✓' : 'Hapus'}
+      </button>`;
+    list.appendChild(div);
+  });
+}
+function bersihinSatu(i){
+  if(cekCooldown()){ alert('Tunggu cooldown'); return; }
+  cacheData[i].bersih = true; cacheData[i].size = 0;
+  renderCache(); updateTotal();
+  if(cacheData.every(c => c.bersih)) mulaiCooldown();
+}
+function bersihinSemua(){
+  if(cekCooldown()){ alert('Tunggu cooldown'); return; }
+  cacheData.forEach(c => { c.bersih = true; c.size = 0; });
+  renderCache(); updateTotal(); mulaiCooldown();
+}
+function updateTotal(){
+  const s = cacheData.reduce((a,b) => a+b.size, 0);
+  document.getElementById('totalCache').textContent = s.toLocaleString() + ' MB';
+  document.getElementById('cacheBar').style.width = s === 0 ? '4%' : '30%';
+  const st = document.getElementById('cacheStatus');
+  if(s !== 0){
+    st.textContent = 'Sisa ' + s.toLocaleString() + ' MB';
+    st.classList.remove('ok');
+  } else {
+    st.textContent = 'Cache sudah bersih';
+    st.classList.add('ok');
+  }
+}
+
+renderGames();
+cekCooldown();
+</script>
+</body>
+</html>
